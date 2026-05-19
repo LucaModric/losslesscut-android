@@ -123,7 +123,13 @@ class VisualSegmentDetectorImplTest {
         every { MediaCodec.createDecoderByType(any()) } returns mockCodec
 
         // Throw CodecException during loop
-        every { mockCodec.dequeueInputBuffer(any()) } throws mockk<MediaCodec.CodecException>(relaxed = true)
+        val codecExceptionConstructor = MediaCodec.CodecException::class.java.getDeclaredConstructor(
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            String::class.java
+        ).apply { isAccessible = true }
+        val codecException = codecExceptionConstructor.newInstance(1, 1, "Codec error")
+        every { mockCodec.dequeueInputBuffer(any()) } throws codecException
 
         val result = detector.analyze("test_uri", 1000) { _, _ -> }
 
