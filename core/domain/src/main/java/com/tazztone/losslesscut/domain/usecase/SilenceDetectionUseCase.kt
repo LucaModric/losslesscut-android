@@ -110,8 +110,8 @@ public class SilenceDetectionUseCase @Inject constructor(
             if (silEnd <= cursor) continue
 
             // Fix boundary tiny gaps: if silence starts almost at 0, pull it to 0
-            val effectiveStart = if (silStart < BOUNDARY_THRESHOLD_MS) 0L else silStart
-            val effectiveEnd = if (clipEnd - silEnd < BOUNDARY_THRESHOLD_MS) clipEnd else silEnd
+            val effectiveStart = clampBoundary(silStart, clipEnd)
+            val effectiveEnd = clampBoundary(silEnd, clipEnd)
 
             if (effectiveStart > cursor) {
                 rawSegments.add(TrimSegment(UUID.randomUUID(), cursor, effectiveStart, SegmentAction.KEEP))
@@ -181,6 +181,12 @@ public class SilenceDetectionUseCase @Inject constructor(
         }
         result.add(current)
         return result
+    }
+
+    private fun clampBoundary(value: Long, clipEnd: Long): Long = when {
+        value < BOUNDARY_THRESHOLD_MS -> 0L
+        clipEnd - value < BOUNDARY_THRESHOLD_MS -> clipEnd
+        else -> value
     }
 
     private companion object {
