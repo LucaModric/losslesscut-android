@@ -102,4 +102,50 @@ class TrackInspectorTest {
         
         verify(exactly = 1) { muxerWriter.addTrack(any()) }
     }
+
+    @Test
+    fun `inspect preserves color space and HDR metadata keys`() {
+        val extractor = mockk<MediaExtractor>()
+        val muxerWriter = mockk<MuxerWriter>()
+        
+        val videoFormat = MediaFormat.createVideoFormat("video/dolby-vision", 3840, 2160)
+        videoFormat.setLong(MediaFormat.KEY_DURATION, 5_000_000L)
+        videoFormat.setInteger("color-standard", MediaFormat.COLOR_STANDARD_BT2020)
+        videoFormat.setInteger("color-transfer", MediaFormat.COLOR_TRANSFER_HLG)
+        videoFormat.setInteger("color-range", MediaFormat.COLOR_RANGE_LIMITED)
+        videoFormat.setInteger("profile", 8)
+        videoFormat.setInteger("level", 4)
+        
+        val staticInfoBuffer = java.nio.ByteBuffer.allocate(10)
+        staticInfoBuffer.put(byteArrayOf(1, 2, 3))
+        staticInfoBuffer.flip()
+        videoFormat.setByteBuffer("hdr-static-info", staticInfoBuffer)
+        
+        val plusInfoBuffer = java.nio.ByteBuffer.allocate(5)
+        plusInfoBuffer.put(byteArrayOf(4, 5))
+        plusInfoBuffer.flip()
+        videoFormat.setByteBuffer("hdr10-plus-info", plusInfoBuffer)
+
+        every { extractor.trackCount } returns 1
+        every { extractor.getTrackFormat(0) } returns videoFormat
+        
+        val capturedFormat = io.mockk.slot<MediaFormat>()
+        every { muxerWriter.addTrack(capture(capturedFormat)) } returns 0
+
+        val inspector = TrackInspector()
+        inspector.inspect(extractor, muxerWriter, keepAudio = false, keepVideo = true, selectedTracks = null)
+
+        assertTrue(capturedFormat.isCaptured)
+        val clean = capturedFormat.captured
+        assertEquals("video/dolby-vision", clean.getString(MediaFormat.KEY_MIME))
+        assertEquals(3840, clean.getInteger(MediaFormat.KEY_WIDTH))
+        assertEquals(2160, clean.getInteger(MediaFormat.KEY_HEIGHT))
+        assertEquals(MediaFormat.COLOR_STANDARD_BT2020, clean.getInteger("color-standard"))
+        assertEquals(MediaFormat.COLOR_TRANSFER_HLG, clean.getInteger("color-transfer"))
+        assertEquals(MediaFormat.COLOR_RANGE_LIMITED, clean.getInteger("color-range"))
+        assertEquals(8, clean.getInteger("profile"))
+        assertEquals(4, clean.getInteger("level"))
+        assertTrue(clean.getByteBuffer("hdr-static-info") != null)
+        assertTrue(clean.getByteBuffer("hdr10-plus-info") != null)
+    }
 }

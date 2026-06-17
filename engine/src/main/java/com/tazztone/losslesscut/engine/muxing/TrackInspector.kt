@@ -114,6 +114,13 @@ class TrackInspector @Inject constructor() {
             copyKey(original, clean, MediaFormat.KEY_FRAME_RATE, KeyType.INT)
             copyKey(original, clean, MediaFormat.KEY_I_FRAME_INTERVAL, KeyType.INT)
             copyKey(original, clean, "rotation-degrees", KeyType.INT)
+            copyKey(original, clean, "color-standard", KeyType.INT)
+            copyKey(original, clean, "color-transfer", KeyType.INT)
+            copyKey(original, clean, "color-range", KeyType.INT)
+            copyKey(original, clean, "profile", KeyType.INT)
+            copyKey(original, clean, "level", KeyType.INT)
+            copyKey(original, clean, "hdr-static-info", KeyType.BYTE_BUFFER)
+            copyKey(original, clean, "hdr10-plus-info", KeyType.BYTE_BUFFER)
         }
 
         // Codec-specific data (CSD) is critical for lossless reproduction
@@ -127,7 +134,7 @@ class TrackInspector @Inject constructor() {
         return clean
     }
 
-    private enum class KeyType { INT, LONG, STRING }
+    private enum class KeyType { INT, LONG, STRING, BYTE_BUFFER }
 
     private fun copyKey(from: MediaFormat, to: MediaFormat, key: String, type: KeyType) {
         if (!from.containsKey(key)) return
@@ -136,6 +143,7 @@ class TrackInspector @Inject constructor() {
                 KeyType.INT -> to.setInteger(key, from.getInteger(key))
                 KeyType.LONG -> to.setLong(key, from.getLong(key))
                 KeyType.STRING -> to.setString(key, from.getString(key))
+                KeyType.BYTE_BUFFER -> to.setByteBuffer(key, from.getByteBuffer(key)!!)
             }
         } catch (e: IllegalArgumentException) {
             Log.w(TAG, "Failed to copy key $key due to type mismatch", e)

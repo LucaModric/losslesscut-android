@@ -17,3 +17,10 @@
   - *Complexity (DeepNesting)*: Detekt flags nested conditionals; satisfy with early returns and extracted boolean predicates before `if`.
   - *Refactoring Splits*: When decomposing a `LargeClass`, verify `init` blocks (e.g., `Paint` colors) and domain imports survive the move.
   - *Cleanup*: Strip `UnusedPrivateProperty` immediately after modifying logic.
+
+## 4. Testing & Library Boundaries (Gotchas)
+- **Engine Instrumented Testing**: Because `:app` has `runtimeOnly(:engine)`, instrumented tests for the engine must reside under `:engine/src/androidTest`.
+- **FileProvider Authority limits**: During `:engine:connectedDebugAndroidTest`, the target app's `AndroidManifest.xml` (containing `FileProvider`) is not active in the library test APK runtime. Avoid testing real `content://` URIs resolving through `FileProvider` authorities inside library-only tests; mock the dependencies or use local storage directories.
+- **Media finalization & Non-MediaStore URIs**: Calling `resolver.update(uri, ContentValues(IS_PENDING=0))` on non-MediaStore providers (such as FileProvider or SAF DocumentFile URIs) throws an `UnsupportedOperationException`. Catch this exception when finalizing media/images since these files are already visible.
+- **Shared Storage Test Files**: Instrumented tests in the app module running under targetSdk 33+ cannot read `/sdcard/` (e.g., `/sdcard/Download`) directly via standard File APIs due to Scoped Storage constraints. Use `UiAutomation.executeShellCommand()` to copy assets from shared storage to the app's cache directory in the test setup.
+

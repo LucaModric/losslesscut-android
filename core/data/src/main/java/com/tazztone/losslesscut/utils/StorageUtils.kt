@@ -97,7 +97,11 @@ class StorageUtils @Inject constructor(
             val updatedDetails = ContentValues().apply {
                 put(MediaStore.MediaColumns.IS_PENDING, 0)
             }
-            resolver.update(uri, updatedDetails, null, null)
+            try {
+                resolver.update(uri, updatedDetails, null, null)
+            } catch (e: UnsupportedOperationException) {
+                Log.d("StorageUtils", "Skipping IS_PENDING update for non-MediaStore URI: $uri", e)
+            }
         }
     }
 
@@ -140,7 +144,11 @@ class StorageUtils @Inject constructor(
             val updatedDetails = ContentValues().apply {
                 put(MediaStore.Images.Media.IS_PENDING, 0)
             }
-            resolver.update(uri, updatedDetails, null, null)
+            try {
+                resolver.update(uri, updatedDetails, null, null)
+            } catch (e: UnsupportedOperationException) {
+                Log.d("StorageUtils", "Skipping IS_PENDING update for non-MediaStore URI: $uri", e)
+            }
         }
     }
 }

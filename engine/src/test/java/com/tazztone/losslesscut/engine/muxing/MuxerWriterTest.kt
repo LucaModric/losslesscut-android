@@ -27,6 +27,7 @@ class MuxerWriterTest {
         muxerWriter = MuxerWriter(mockMuxer)
         mockkStatic(Log::class)
         every { Log.e(any(), any(), any()) } returns 0
+        every { Log.w(any(), any(), any<Throwable>()) } returns 0
     }
 
     @After
@@ -148,5 +149,32 @@ class MuxerWriterTest {
         verify { mockMuxer.stop() }
         verify { mockMuxer.release() }
         verify { Log.e(any(), "Muxer release failed", any<IllegalStateException>()) }
+    }
+
+    @Test
+    fun `addTrack falls back to video-hevc when video-dolby-vision fails`() {
+        val format = mockk<MediaFormat>(relaxed = true)
+        every { format.getString(MediaFormat.KEY_MIME) } returns "video/dolby-vision"
+
+        every { mockMuxer.addTrack(format) } throws IllegalArgumentException("Unsupported mime type") andThen 1
+
+        val trackIndex = muxerWriter.addTrack(format)
+
+        assertEquals(1, trackIndex)
+        verify(exactly = 2) { mockMuxer.addTrack(format) }
+        verify { format.setString(MediaFormat.KEY_MIME, "video/hevc") }
+    }
+
+    @Test
+    fun `addTrack propagates exception when non-dolby-vision track fails`() {
+        val format = mockk<MediaFormat>(relaxed = true)
+        every { format.getString(MediaFormat.KEY_MIME) } returns "video/avc"
+        every { mockMuxer.addTrack(format) } throws IllegalArgumentException("Unsupported mime type")
+
+        assertThrows(IllegalArgumentException::class.java) {
+            muxerWriter.addTrack(format)
+        }
+
+        verify(exactly = 1) { mockMuxer.addTrack(format) }
     }
 }
