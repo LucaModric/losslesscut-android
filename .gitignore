@@ -122,3 +122,4 @@ kotlin-ide/
 **/xcuserdata
 .test-federation.*
 .kilo/
+assets/example_files/
