@@ -148,4 +148,53 @@ class TrackInspectorTest {
         assertTrue(clean.getByteBuffer("hdr-static-info") != null)
         assertTrue(clean.getByteBuffer("hdr10-plus-info") != null)
     }
+
+    @Test
+    fun `inspect handles float frame rate format safely`() {
+        val extractor = mockk<MediaExtractor>()
+        val muxerWriter = mockk<MuxerWriter>()
+        
+        val videoFormat = MediaFormat.createVideoFormat("video/avc", 1920, 1080)
+        videoFormat.setLong(MediaFormat.KEY_DURATION, 5_000_000L)
+        // Store frame rate as Float
+        videoFormat.setFloat(MediaFormat.KEY_FRAME_RATE, 29.97f)
+
+        every { extractor.trackCount } returns 1
+        every { extractor.getTrackFormat(0) } returns videoFormat
+        
+        val capturedFormat = io.mockk.slot<MediaFormat>()
+        every { muxerWriter.addTrack(capture(capturedFormat)) } returns 0
+
+        val inspector = TrackInspector()
+        inspector.inspect(extractor, muxerWriter, keepAudio = false, keepVideo = true, selectedTracks = null)
+
+        assertTrue(capturedFormat.isCaptured)
+        val clean = capturedFormat.captured
+        assertEquals(29.97f, clean.getFloat(MediaFormat.KEY_FRAME_RATE), 0.001f)
+    }
+
+    @Test
+    fun `inspect handles invalid metadata types safely without crashing`() {
+        val extractor = mockk<MediaExtractor>()
+        val muxerWriter = mockk<MuxerWriter>()
+        
+        val videoFormat = MediaFormat.createVideoFormat("video/avc", 1920, 1080)
+        videoFormat.setLong(MediaFormat.KEY_DURATION, 5_000_000L)
+        
+        // Put mismatched type: profile and color-standard as strings/floats instead of ints
+        videoFormat.setString("profile", "high")
+        videoFormat.setFloat("color-standard", 1.0f)
+
+        every { extractor.trackCount } returns 1
+        every { extractor.getTrackFormat(0) } returns videoFormat
+        
+        val capturedFormat = io.mockk.slot<MediaFormat>()
+        every { muxerWriter.addTrack(capture(capturedFormat)) } returns 0
+
+        val inspector = TrackInspector()
+        // Should not throw NullPointerException or ClassCastException
+        inspector.inspect(extractor, muxerWriter, keepAudio = false, keepVideo = true, selectedTracks = null)
+
+        assertTrue(capturedFormat.isCaptured)
+    }
 }
