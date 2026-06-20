@@ -8,7 +8,7 @@ import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.customview.widget.ExploreByTouchHelper
 import com.tazztone.losslesscut.R
 import com.tazztone.losslesscut.domain.model.SegmentAction
-import com.tazztone.losslesscut.viewmodel.ClipController
+import com.tazztone.losslesscut.domain.usecase.ClipManagementUseCase
 
 /**
  * Extracted accessibility helper for CustomVideoSeeker to reduce class size.
@@ -175,12 +175,12 @@ internal class SeekerAccessibilityHelper(private val seeker: CustomVideoSeeker) 
         
         if (isStart) {
             val newStart = (targetSegment.startMs + direction * STEP_MS)
-                .coerceIn(0, targetSegment.endMs - ClipController.MIN_SEGMENT_DURATION_MS)
+                .coerceIn(0, targetSegment.endMs - ClipManagementUseCase.MIN_SEGMENT_DURATION_MS)
             seeker.onSegmentBoundsChanged?.invoke(targetSegment.id, newStart, targetSegment.endMs, newStart)
             seeker.onSegmentBoundsDragEnd?.invoke()
         } else {
             val newEnd = (targetSegment.endMs + direction * STEP_MS)
-                .coerceIn(targetSegment.startMs + ClipController.MIN_SEGMENT_DURATION_MS, seeker.videoDurationMs)
+                .coerceIn(targetSegment.startMs + ClipManagementUseCase.MIN_SEGMENT_DURATION_MS, seeker.videoDurationMs)
             seeker.onSegmentBoundsChanged?.invoke(targetSegment.id, targetSegment.startMs, newEnd, newEnd)
             seeker.onSegmentBoundsDragEnd?.invoke()
         }

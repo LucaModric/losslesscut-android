@@ -165,7 +165,27 @@ class VideoEditingRepositoryImpl @Inject constructor(
         sessionFile.exists()
     }
 
-    override suspend fun saveWaveformToCache(cacheKey: String, result: WaveformResult) {
+    override suspend fun getWaveform(
+        clip: MediaClip,
+        onProgress: ((WaveformResult) -> Unit)?
+    ): WaveformResult? = withContext(ioDispatcher) {
+        evictOldCacheFiles()
+        val cacheKeyInput = "${clip.uri}_${clip.durationMs}_${clip.width}x${clip.height}"
+        val cacheKey = "waveform_${HashUtils.sha256(cacheKeyInput)}.v3.bin"
+        
+        val cached = loadWaveformFromCache(cacheKey)
+        if (cached != null) {
+            return@withContext cached
+        }
+        
+        val extracted = extractWaveform(clip.uri, onProgress)
+        if (extracted != null) {
+            saveWaveformToCache(cacheKey, extracted)
+        }
+        extracted
+    }
+
+    private suspend fun saveWaveformToCache(cacheKey: String, result: WaveformResult) {
         withContext(ioDispatcher) {
             try {
                 val cacheFile = File(context.cacheDir, cacheKey)
@@ -185,7 +205,7 @@ class VideoEditingRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun loadWaveformFromCache(cacheKey: String): WaveformResult? = withContext(ioDispatcher) {
+    private suspend fun loadWaveformFromCache(cacheKey: String): WaveformResult? = withContext(ioDispatcher) {
         val cacheFile = File(context.cacheDir, cacheKey)
         if (!cacheFile.exists()) return@withContext null
         try {
@@ -213,7 +233,7 @@ class VideoEditingRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun evictOldCacheFiles() {
+    private suspend fun evictOldCacheFiles() {
         withContext(ioDispatcher) {
             try {
                 val sevenDaysAgo = System.currentTimeMillis() - 7 * 86_400_000L

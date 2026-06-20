@@ -37,8 +37,9 @@ public interface IVideoEditingRepository {
     public suspend fun saveSession(clips: List<MediaClip>)
     public suspend fun restoreSession(uri: String): List<MediaClip>?
     public suspend fun hasSavedSession(uri: String): Boolean
-    public suspend fun saveWaveformToCache(cacheKey: String, result: WaveformResult)
-    public suspend fun loadWaveformFromCache(cacheKey: String): WaveformResult?
-    public suspend fun evictOldCacheFiles()
+    public suspend fun getWaveform(
+        clip: MediaClip,
+        onProgress: ((WaveformResult) -> Unit)? = null
+    ): WaveformResult?
     public suspend fun writeSnapshot(bitmap: ByteArray, outputUri: String, format: String, quality: Int): Boolean
 }

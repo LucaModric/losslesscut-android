@@ -37,6 +37,7 @@ public class VideoEditingViewModelTest {
     private val mockSnapUseCase = mockk<ExtractSnapshotUseCase>(relaxed = true)
     private val mockSessionUseCase = mockk<SessionUseCase>(relaxed = true)
     private val mockVisualDetector = mockk<IVisualSegmentDetector>(relaxed = true)
+    private val mockSegmentDetector = mockk<SegmentDetectorUseCase>(relaxed = true)
 
     @Before
     fun setUp() {
@@ -57,7 +58,8 @@ public class VideoEditingViewModelTest {
         mockSnapUseCase,
         silenceUseCase,
         mockSessionUseCase,
-        mockVisualDetector
+        mockVisualDetector,
+        mockSegmentDetector
     )
 
     @Test

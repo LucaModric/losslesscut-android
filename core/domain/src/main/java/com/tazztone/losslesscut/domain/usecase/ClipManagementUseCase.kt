@@ -28,7 +28,7 @@ public open class ClipManagementUseCase @Inject constructor(
         }
     }
 
-    public fun splitSegment(clip: MediaClip, positionMs: Long, minDurationMs: Long): MediaClip? {
+    public fun splitSegment(clip: MediaClip, positionMs: Long, minDurationMs: Long = MIN_SEGMENT_DURATION_MS): MediaClip? {
         val segment = clip.segments.find { positionMs in it.startMs..it.endMs }
         
         val canSplit = segment != null && 
@@ -64,17 +64,25 @@ public open class ClipManagementUseCase @Inject constructor(
         }
     }
 
-    public fun updateSegmentBounds(clip: MediaClip, id: UUID, start: Long, end: Long): MediaClip {
+    public fun updateSegmentBounds(clip: MediaClip, id: UUID, start: Long, end: Long, minDurationMs: Long = MIN_SEGMENT_DURATION_MS): MediaClip {
+        val coercedEnd = if (end - start < minDurationMs) start + minDurationMs else end
         val newSegments = clip.segments.map { 
-            if (it.id == id) it.copy(startMs = start, endMs = end) else it 
+            if (it.id == id) it.copy(startMs = start, endMs = coercedEnd) else it 
         }
         return clip.copy(segments = newSegments)
     }
 
     public fun reorderClips(clips: List<MediaClip>, from: Int, to: Int): List<MediaClip> {
+        if (from !in clips.indices || to !in 0..clips.size || from == to) {
+            return clips
+        }
         val list = clips.toMutableList()
         val item = list.removeAt(from)
         list.add(to, item)
         return list
+    }
+
+    public companion object {
+        public const val MIN_SEGMENT_DURATION_MS: Long = 100L
     }
 }

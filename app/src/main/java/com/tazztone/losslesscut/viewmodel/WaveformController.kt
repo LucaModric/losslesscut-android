@@ -2,7 +2,6 @@ package com.tazztone.losslesscut.viewmodel
 
 import com.tazztone.losslesscut.domain.di.IoDispatcher
 import com.tazztone.losslesscut.domain.model.MediaClip
-import com.tazztone.losslesscut.domain.model.HashUtils
 import com.tazztone.losslesscut.domain.model.DetectionUtils
 import com.tazztone.losslesscut.domain.model.WaveformResult
 import com.tazztone.losslesscut.domain.repository.IVideoEditingRepository
@@ -61,24 +60,11 @@ class WaveformController @Inject constructor(
             _waveformData.value = null
             rawWaveformResult = null
             
-            // SHA-256 caching with duration/dims to detect content changes (best effort)
-            // Use v3 suffix for new fixed 100Hz WaveformResult format
-            val cacheKeyInput = "${clip.uri}_${clip.durationMs}_${clip.width}x${clip.height}"
-            val cacheKey = "waveform_${HashUtils.sha256(cacheKeyInput)}.v3.bin"
-            
-            val cached = repository.loadWaveformFromCache(cacheKey)
-            if (cached != null) {
-                rawWaveformResult = cached
-                updateUiWaveform(cached, clip.durationMs)
-                return@launch
-            }
-            
-            repository.extractWaveform(clip.uri) { progressResult ->
+            repository.getWaveform(clip) { progressResult ->
                 updateUiWaveform(progressResult, clip.durationMs)
             }?.let { finalResult ->
                 rawWaveformResult = finalResult
                 updateUiWaveform(finalResult, clip.durationMs)
-                repository.saveWaveformToCache(cacheKey, finalResult)
             }
         }
     }

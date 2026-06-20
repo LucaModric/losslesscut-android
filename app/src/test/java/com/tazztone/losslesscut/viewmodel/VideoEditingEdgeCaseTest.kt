@@ -31,6 +31,7 @@ public class VideoEditingEdgeCaseTest {
     private val mockPrefs = mockk<AppPreferences>(relaxed = true)
     private val mockExportUseCase = mockk<ExportUseCase>()
     private val mockVisualDetector = mockk<IVisualSegmentDetector>(relaxed = true)
+    private val mockSegmentDetector = mockk<SegmentDetectorUseCase>(relaxed = true)
     
     private lateinit var viewModel: VideoEditingViewModel
 
@@ -39,8 +40,7 @@ public class VideoEditingEdgeCaseTest {
         Dispatchers.setMain(testDispatcher)
         
         // Explicitly stub common repository calls to avoid MockK/Coroutine ClassCastException
-        coEvery { mockRepo.loadWaveformFromCache(any()) } returns null
-        coEvery { mockRepo.extractWaveform(any(), any()) } returns null
+        coEvery { mockRepo.getWaveform(any(), any()) } returns null
         coEvery { mockRepo.getKeyframes(any()) } returns emptyList()
         
         val useCases = VideoEditingUseCases(
@@ -49,7 +49,8 @@ public class VideoEditingEdgeCaseTest {
             ExtractSnapshotUseCase(mockRepo, testDispatcher),
             SilenceDetectionUseCase(mockRepo, testDispatcher),
             SessionUseCase(mockRepo, testDispatcher),
-            mockVisualDetector
+            mockVisualDetector,
+            mockSegmentDetector
         )
         
         viewModel = VideoEditingViewModel(
@@ -129,7 +130,7 @@ public class VideoEditingEdgeCaseTest {
             Result.success(createMockClip(uriStr, 10000L))
         }
         
-        coEvery { mockRepo.loadWaveformFromCache(any()) } coAnswers {
+        coEvery { mockRepo.getWaveform(any(), any()) } coAnswers {
             delay(1000)
             null
         }
@@ -180,7 +181,7 @@ public class VideoEditingEdgeCaseTest {
         coEvery { mockRepo.createClipFromUri(any()) } returns Result.success(clip)
         
         val waveform = FloatArray(100) { i -> if (i in 2..50) 0.01f else 0.5f }
-        coEvery { mockRepo.loadWaveformFromCache(any()) } returns WaveformResult(waveform, 0.5f, 1000L)
+        coEvery { mockRepo.getWaveform(any(), any()) } returns WaveformResult(waveform, 0.5f, 1000L)
         
         viewModel.initialize(listOf(uri))
         advanceUntilIdle()

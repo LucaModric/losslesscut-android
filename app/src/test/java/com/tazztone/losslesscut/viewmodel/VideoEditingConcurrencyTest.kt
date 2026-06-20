@@ -29,6 +29,7 @@ public class VideoEditingConcurrencyTest {
     private val mockPrefs = mockk<AppPreferences>(relaxed = true)
     private val mockExportUseCase = mockk<ExportUseCase>(relaxed = true)
     private val mockVisualDetector = mockk<IVisualSegmentDetector>(relaxed = true)
+    private val mockSegmentDetector = mockk<SegmentDetectorUseCase>(relaxed = true)
     
     private lateinit var viewModel: VideoEditingViewModel
 
@@ -36,8 +37,7 @@ public class VideoEditingConcurrencyTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         
-        coEvery { mockRepo.loadWaveformFromCache(any()) } returns null
-        coEvery { mockRepo.extractWaveform(any(), any()) } returns null
+        coEvery { mockRepo.getWaveform(any(), any()) } returns null
         coEvery { mockRepo.getKeyframes(any()) } returns emptyList()
         
         val useCases = VideoEditingUseCases(
@@ -46,7 +46,8 @@ public class VideoEditingConcurrencyTest {
             ExtractSnapshotUseCase(mockRepo, testDispatcher),
             SilenceDetectionUseCase(mockRepo, testDispatcher),
             SessionUseCase(mockRepo, testDispatcher),
-            mockVisualDetector
+            mockVisualDetector,
+            mockSegmentDetector
         )
         
         viewModel = VideoEditingViewModel(
@@ -117,13 +118,13 @@ public class VideoEditingConcurrencyTest {
         }
         
         // Slow waveform extraction for clip 0
-        coEvery { mockRepo.extractWaveform(uri0, any()) } coAnswers {
+        coEvery { mockRepo.getWaveform(match { it.uri == uri0 }, any()) } coAnswers {
             delay(1000)
             WaveformResult(floatArrayOf(0f, 0f, 0f), 0f, 10000L)
         }
         
         // Fast waveform extraction for clip 1
-        coEvery { mockRepo.extractWaveform(uri1, any()) } coAnswers {
+        coEvery { mockRepo.getWaveform(match { it.uri == uri1 }, any()) } coAnswers {
             delay(100)
             WaveformResult(floatArrayOf(1f, 1f, 1f), 1f, 10000L)
         }
@@ -158,7 +159,7 @@ public class VideoEditingConcurrencyTest {
             Result.success(createMockClip(uriStr))
         }
         
-        coEvery { mockRepo.loadWaveformFromCache(any()) } answers {
+        coEvery { mockRepo.getWaveform(any(), any()) } answers {
             WaveformResult(floatArrayOf(0.1f, 0.1f, 0.1f, 0.1f, 0.1f), 0.1f, 20000L)
         }
 

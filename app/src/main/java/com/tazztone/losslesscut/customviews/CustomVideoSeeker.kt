@@ -5,7 +5,6 @@ import com.tazztone.losslesscut.domain.model.SegmentAction
 import com.tazztone.losslesscut.domain.model.TrimSegment
 import com.tazztone.losslesscut.domain.usecase.SilenceDetectionUseCase
 import com.tazztone.losslesscut.viewmodel.VideoEditingViewModel
-import com.tazztone.losslesscut.viewmodel.ClipController
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas

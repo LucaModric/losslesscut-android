@@ -7,7 +7,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import com.tazztone.losslesscut.domain.model.SegmentAction
 import com.tazztone.losslesscut.domain.model.TrimSegment
-import com.tazztone.losslesscut.viewmodel.ClipController
+import com.tazztone.losslesscut.domain.usecase.ClipManagementUseCase
 import java.util.UUID
 
 /**
@@ -256,10 +256,10 @@ internal class SeekerTouchHandler(private val seeker: CustomVideoSeeker) {
         val min = if (isLeft) {
             neighbor?.endMs ?: 0L
         } else {
-            segment.startMs + ClipController.MIN_SEGMENT_DURATION_MS
+            segment.startMs + ClipManagementUseCase.MIN_SEGMENT_DURATION_MS
         }
         val max = if (isLeft) {
-            segment.endMs - ClipController.MIN_SEGMENT_DURATION_MS
+            segment.endMs - ClipManagementUseCase.MIN_SEGMENT_DURATION_MS
         } else {
             neighbor?.startMs ?: seeker.videoDurationMs
         }
@@ -366,13 +366,13 @@ internal class SeekerTouchHandler(private val seeker: CustomVideoSeeker) {
     private fun updateSegmentBounds(segment: TrimSegment, touchTimeMs: Long) {
         if (seeker.currentTouchTarget == CustomVideoSeeker.TouchTarget.HANDLE_LEFT) {
             val newStart = touchTimeMs.coerceAtMost(
-                segment.endMs - ClipController.MIN_SEGMENT_DURATION_MS
+                segment.endMs - ClipManagementUseCase.MIN_SEGMENT_DURATION_MS
             )
             seeker.onSegmentBoundsChanged?.invoke(segment.id, newStart, segment.endMs, newStart)
             seeker.seekPositionMs = newStart
         } else {
             val newEnd = touchTimeMs.coerceAtLeast(
-                segment.startMs + ClipController.MIN_SEGMENT_DURATION_MS
+                segment.startMs + ClipManagementUseCase.MIN_SEGMENT_DURATION_MS
             )
             seeker.onSegmentBoundsChanged?.invoke(segment.id, segment.startMs, newEnd, newEnd)
             seeker.seekPositionMs = newEnd

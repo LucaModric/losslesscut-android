@@ -65,22 +65,36 @@ class VideoEditingRepositoryTest {
     }
 
     @Test
-    fun saveAndLoadWaveformCache_v2_worksCorrectly() = runTest {
-        val cacheKey = "waveform_test"
+    fun getWaveform_cacheHitAndMiss_worksCorrectly() = runTest {
+        val clip = MediaClip(
+            id = UUID.randomUUID(),
+            uri = "content://mock/1.mp4",
+            fileName = "1.mp4",
+            durationMs = 1000L,
+            width = 1920, height = 1080,
+            videoMime = "video/mp4", audioMime = "audio/aac",
+            sampleRate = 44100, channelCount = 2,
+            fps = 30f, rotation = 0, isAudioOnly = false
+        )
         val waveform = WaveformResult(
             rawAmplitudes = floatArrayOf(0.1f, 0.2f, 0.3f),
             maxAmplitude = 0.3f,
             durationUs = 1000000L
         )
 
-        repository.saveWaveformToCache(cacheKey, waveform)
-        
-        val loaded = repository.loadWaveformFromCache(cacheKey)
-        
-        assertNotNull(loaded)
-        assertEquals(waveform.durationUs, loaded!!.durationUs)
-        assertEquals(waveform.maxAmplitude, loaded!!.maxAmplitude, 0.001f)
-        assertArrayEquals(waveform.rawAmplitudes, loaded!!.rawAmplitudes, 0.001f)
+        // Mock extractor on miss
+        coEvery { waveformExtractor.extract(clip.uri, any()) } returns waveform
+
+        // First call - cache miss
+        val firstResult = repository.getWaveform(clip)
+        assertNotNull(firstResult)
+        assertArrayEquals(waveform.rawAmplitudes, firstResult!!.rawAmplitudes, 0.001f)
+
+        // Second call - cache hit (should not call extractor again)
+        coEvery { waveformExtractor.extract(clip.uri, any()) } throws IllegalStateException("Should not be called")
+        val secondResult = repository.getWaveform(clip)
+        assertNotNull(secondResult)
+        assertArrayEquals(waveform.rawAmplitudes, secondResult!!.rawAmplitudes, 0.001f)
     }
 
     @Test(expected = IllegalArgumentException::class)

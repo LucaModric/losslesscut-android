@@ -137,6 +137,67 @@ internal class ClipManagementUseCaseTest {
     }
 
     @Test
+    internal fun `splitSegment fails when position is out of segment bounds`() {
+        val segmentId = UUID.randomUUID()
+        val originalSegment = TrimSegment(segmentId, 0L, 1000L, SegmentAction.KEEP)
+        val clip = createDummyClip(segments = listOf(originalSegment))
+
+        val result = useCase.splitSegment(clip, 2000L, 100L)
+
+        assertNull(result)
+    }
+
+    @Test
+    internal fun `reorderClips returns original list when from index is out of bounds`() {
+        val clip1 = createDummyClip(uri = "uri1", fileName = "1.mp4")
+        val clip2 = createDummyClip(uri = "uri2", fileName = "2.mp4")
+        val clips = listOf(clip1, clip2)
+
+        val resultNegative = useCase.reorderClips(clips, -1, 1)
+        val resultTooLarge = useCase.reorderClips(clips, 2, 1)
+
+        assertEquals(clips, resultNegative)
+        assertEquals(clips, resultTooLarge)
+    }
+
+    @Test
+    internal fun `reorderClips returns original list when to index is out of bounds`() {
+        val clip1 = createDummyClip(uri = "uri1", fileName = "1.mp4")
+        val clip2 = createDummyClip(uri = "uri2", fileName = "2.mp4")
+        val clips = listOf(clip1, clip2)
+
+        val resultNegative = useCase.reorderClips(clips, 0, -1)
+        val resultTooLarge = useCase.reorderClips(clips, 0, 3)
+
+        assertEquals(clips, resultNegative)
+        assertEquals(clips, resultTooLarge)
+    }
+
+    @Test
+    internal fun `reorderClips returns original list when indices are same`() {
+        val clip1 = createDummyClip(uri = "uri1", fileName = "1.mp4")
+        val clip2 = createDummyClip(uri = "uri2", fileName = "2.mp4")
+        val clips = listOf(clip1, clip2)
+
+        val result = useCase.reorderClips(clips, 1, 1)
+
+        assertEquals(clips, result)
+    }
+
+    @Test
+    internal fun `updateSegmentBounds coerces end time when duration is too short`() {
+        val segmentId = UUID.randomUUID()
+        val seg1 = TrimSegment(segmentId, 0L, 500L, SegmentAction.KEEP)
+        val clip = createDummyClip(segments = listOf(seg1))
+
+        // Update with short duration (50ms < MIN_SEGMENT_DURATION_MS = 100ms)
+        val result = useCase.updateSegmentBounds(clip, segmentId, 100L, 150L)
+
+        assertEquals(100L, result.segments[0].startMs)
+        assertEquals(100L + ClipManagementUseCase.MIN_SEGMENT_DURATION_MS, result.segments[0].endMs)
+    }
+
+    @Test
     internal fun `createClips returns successful list`() = runTest {
         val uri = "test_uri"
         val expectedClip = createDummyClip(uri = uri)
