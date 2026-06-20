@@ -109,8 +109,8 @@ class SmartCutOverlayController(
         }
 
         // Apply informative tooltips to tab headers
-        tabLayout?.getTabAt(0)?.view?.tooltipText = context.getString(R.string.tooltip_silence_tab)
-        tabLayout?.getTabAt(1)?.view?.tooltipText = context.getString(R.string.tooltip_visual_tab)
+        tabLayout?.getTabAt(0)?.contentDescription = context.getString(R.string.tooltip_silence_tab)
+        tabLayout?.getTabAt(1)?.contentDescription = context.getString(R.string.tooltip_visual_tab)
     }
 
     fun hide() {
